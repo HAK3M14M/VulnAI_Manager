@@ -1,0 +1,19 @@
+ACEITE DE RISCO E GESTÃO DE EXCEÇÕES
+
+1. Quando usar aceite de risco
+Nem sempre é possível corrigir uma vulnerabilidade no prazo (sistema legado, incompatibilidade, janela de manutenção inexistente, custo proibitivo, etc.). Nesses casos existe o processo formal de Risk Acceptance.
+
+2. Elementos de um bom processo de exceção
+- Identificação clara da vulnerabilidade e do ativo
+- Justificativa técnica e de negócio
+- Controles compensatórios implementados
+- Prazo de validade da exceção (não pode ser eterno)
+- Aprovação formal de um responsável (gestor de risco / CISO / dono do ativo)
+- Revisão periódica obrigatória
+
+3. Boas práticas
+- Exceções devem ser a exceção, não a regra
+- Toda exceção deve ter data de expiração
+- Manter registro auditável
+- Monitorar de forma diferenciada os ativos com exceção ativa
+- Reportar quantidade e tempo médio de exceções como métrica de maturidade

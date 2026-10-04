@@ -1,0 +1,33 @@
+PATCH MANAGEMENT E MITIGAÇÃO DE VULNERABILIDADES
+
+1. O que é Patch Management
+Patch Management é o processo de identificar, adquirir, testar, implantar e verificar correções (patches) em sistemas, aplicações e firmwares. É um dos controles mais eficazes para reduzir a superfície de ataque.
+
+2. Ciclo de Patch Management
+- Inventário de ativos e software
+- Monitoramento de novas vulnerabilidades e patches
+- Avaliação de risco e priorização
+- Teste do patch em ambiente controlado
+- Implantação (produção)
+- Verificação e documentação
+- Tratamento de exceções (sistemas que não podem ser patchados)
+
+3. Estratégias de Mitigação quando não é possível aplicar o patch imediatamente
+- Compensating Controls (controles compensatórios)
+- Segmentação de rede
+- WAF / IPS / Virtual Patching
+- Desabilitar funcionalidade vulnerável
+- Restringir acesso (firewall, allowlist)
+- Monitoramento reforçado (detecção de exploração)
+- Isolamento do ativo crítico
+
+4. Virtual Patching
+Consiste em aplicar proteção no perímetro ou no host (WAF, IPS, EDR) que bloqueia a exploração da vulnerabilidade sem alterar o código vulnerável. É uma solução temporária até a aplicação do patch oficial.
+
+5. Boas práticas
+- Manter inventário atualizado
+- Classificar ativos por criticidade
+- Definir SLAs de remediação por nível de risco
+- Automatizar sempre que possível
+- Ter processo formal de exceção e aceite de risco
+- Medir cobertura de patch e tempo médio de remediação

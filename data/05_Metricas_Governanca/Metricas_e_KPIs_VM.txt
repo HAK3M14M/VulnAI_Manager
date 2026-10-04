@@ -1,0 +1,39 @@
+MÉTRICAS E KPIs DE GESTÃO DE VULNERABILIDADES
+
+1. Por que medir
+Sem métricas é impossível saber se o programa de Vulnerability Management está melhorando, piorando ou estagnado. Métricas permitem justificar investimentos e tomar decisões baseadas em dados.
+
+2. Principais KPIs recomendados
+
+Cobertura:
+- Percentual de ativos inventariados e escaneados
+- Percentual de ativos com agente/scanner ativo
+
+Eficiência de Remediação:
+- Mean Time to Remediate (MTTR) – tempo médio para corrigir
+- Percentual de vulnerabilidades críticas/altas corrigidas dentro do SLA
+- Percentual de KEV (CISA) corrigidas no prazo
+
+Risco:
+- Quantidade de vulnerabilidades abertas por severidade
+- Quantidade de vulnerabilidades exploráveis (KEV + EPSS alto)
+- Risk Score consolidado do ambiente
+
+Operacional:
+- Tempo médio entre publicação do CVE e detecção no ambiente
+- Percentual de exceções de patch ativas
+- Taxa de reabertura de vulnerabilidades
+
+3. SLAs sugeridos (exemplo)
+- KEV + ativo exposto na internet: 48h a 7 dias
+- Críticas (CVSS alto + EPSS elevado): 7 a 15 dias
+- Altas: 30 dias
+- Médias: 60 a 90 dias
+- Baixas: próximo ciclo de manutenção
+
+4. Governança
+- Existência de política formal de Vulnerability Management
+- Processo de aceite de risco documentado
+- Comitê ou fórum de priorização
+- Relatórios executivos periódicos (para gestão)
+- Integração com gestão de mudanças e gestão de incidentes

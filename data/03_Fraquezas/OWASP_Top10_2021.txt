@@ -1,0 +1,58 @@
+OWASP Top 10:2021
+
+OWASP Top 10:2021
+Skip to content
+en - English
+ar - العربية
+de - Deutsch
+es - Español
+fr - Français
+id - Indonesian
+it - Italiano
+ja - 日本語
+pt-BR - Português (Brasil)
+tr - Türkçe
+zh-Hant - 简体中文
+zh-TW - 繁體中文
+Initializing search
+OWASP/Top10
+Introduction
+Notice
+How to use the OWASP Top 10 as a standard
+How to start an AppSec program with the OWASP Top 10
+About OWASP
+Top 10:2021 List
+Next Steps
+OWASP Top 10:2021
+Welcome to the OWASP Top 10:2021 documentation.
+The OWASP Top 10 is a standard awareness document for developers and web application security. It represents a broad consensus about the most critical security risks to web applications.
+Getting Started
+Start with the
+Introduction
+to learn about the OWASP Top 10:2021.
+Navigation
+Use the navigation menu on the left to explore:
+-
+Introduction
+-
+Notice
+-
+How to use the OWASP Top 10 as a standard
+-
+How to start an AppSec program with the OWASP Top 10
+-
+About OWASP
+The Top 10:2021 List
+A01 Broken Access Control
+A02 Cryptographic Failures
+A03 Injection
+A04 Insecure Design
+A05 Security Misconfiguration
+A06 Vulnerable and Outdated Components
+A07 Identification and Authentication Failures
+A08 Software and Data Integrity Failures
+A09 Security Logging and Monitoring Failures
+A10 Server Side Request Forgery (SSRF)
+Looking for the 2025 Release Candidate?
+Visit
+https://owasp.org/Top10/2025/

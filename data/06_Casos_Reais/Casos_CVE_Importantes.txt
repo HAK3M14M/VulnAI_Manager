@@ -1,0 +1,37 @@
+CASOS REAIS DE VULNERABILIDADES IMPORTANTES
+
+1. Log4Shell (CVE-2021-44228)
+- Tipo: Remote Code Execution (RCE) via JNDI no Apache Log4j
+- Impacto: Crítico. Afetou milhares de aplicações Java em todo o mundo
+- CVSS: 10.0
+- Por que foi grave: Exploração fácil, ampla presença da biblioteca, muitos sistemas sem inventário adequado
+- Lições: Importância de inventário de componentes (SCA), resposta rápida a KEVs e capacidade de virtual patching
+
+2. EternalBlue (CVE-2017-0144)
+- Tipo: RCE no protocolo SMB do Windows
+- Usado por: WannaCry e NotPetya
+- Impacto: Ataques globais de ransomware e destruição
+- Lição: Sistemas desatualizados + protocolos legados expostos = risco extremo. Patch management e segmentação são essenciais
+
+3. ProxyShell / ProxyLogon (Exchange)
+- Conjunto de vulnerabilidades no Microsoft Exchange
+- Permitia RCE não autenticado
+- Amplamente explorado por grupos de ransomware
+- Lição: Serviços de e-mail/exposição externa precisam de prioridade máxima de patch e monitoramento
+
+4. Heartbleed (CVE-2014-0160)
+- Tipo: Leitura de memória (OpenSSL)
+- Impacto: Vazamento de chaves privadas, tokens e dados sensíveis
+- Lição: Vulnerabilidades em bibliotecas criptográficas têm impacto sistêmico. Necessidade de atualização rápida e rotação de segredos
+
+5. MOVEit Transfer (CVE-2023-34362)
+- SQL Injection em solução de transferência de arquivos
+- Usado pelo grupo Clop em campanha massiva de extorsão
+- Lição: Aplicações de terceiros de alto privilégio também precisam entrar no ciclo formal de VM. Fornecedores importam
+
+PRINCIPAIS LIÇÕES APRENDIDAS DOS CASOS REAIS
+- Inventário é a base de tudo
+- Priorização deve considerar exploração real (KEV + EPSS), não só CVSS
+- Tempo de resposta importa (dias, não meses)
+- Controles compensatórios salvam quando o patch não é imediato
+- Sistemas legados e de terceiros são frequentemente os mais críticos
