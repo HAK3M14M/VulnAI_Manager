@@ -61,7 +61,7 @@ def criar_base_vetorial():
     chunks = splitter.split_documents(documentos)
     print(f"Chunks criados: {len(chunks)}")
 
-    print("\nCarregando modelo de embedding (primeira vez pode demorar)...")
+    print("\nCarregando modelo de embedding...")
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )

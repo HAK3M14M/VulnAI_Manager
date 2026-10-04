@@ -1,12 +1,16 @@
 """
-VulnAI Manager
+VulnAI Manager - Versão Avançada
+- Prompt profissional
+- Melhor análise de PDF
+- Modo de priorização de CVEs
+- Memória de conversa
+- RAG ajustado
 """
 
 import os
 import re
 import tempfile
 import requests
-from pathlib import Path
 from langchain_ollama import ChatOllama
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
@@ -18,37 +22,46 @@ from langchain_core.output_parsers import StrOutputParser
 CHROMA_PATH = "./chroma_db"
 OLLAMA_URL = "http://localhost:11434"
 
-SYSTEM_PROMPT = """Você é o VulnAI Manager, especialista sênior em Gestão de Vulnerabilidades.
+# ============================================================
+# PROMPT PROFISSIONAL
+# ============================================================
+SYSTEM_PROMPT = """Você é o VulnAI Manager, um especialista sênior em Gestão de Vulnerabilidades, com sólida experiência em Risk-Based Vulnerability Management, CVSS, EPSS, CISA KEV, patch management e resposta a vulnerabilidades críticas.
 
-Regras:
-1. Sempre responda em português brasileiro.
-2. Seja claro, objetivo e profissional.
-3. Use as informações do documento enviado pelo usuário + a base de conhecimento + dados oficiais de CVEs.
-4. Quando o usuário enviar um PDF, priorize o conteúdo do documento, mas complemente com seu conhecimento quando for útil.
-5. Só use o formato estruturado de CVE quando o usuário perguntar especificamente sobre um CVE.
+Regras de comportamento:
+1. Sempre responda em português brasileiro, de forma clara, objetiva e profissional.
+2. Use linguagem técnica correta, mas acessível.
+3. Quando usar informações de CVSS, EPSS, KEV ou frameworks (NIST, OWASP), mencione a fonte.
+4. Em perguntas gerais, seja didático e completo.
+5. Quando houver um documento PDF enviado, priorize o conteúdo dele e complemente com seu conhecimento.
+6. Quando o usuário pedir priorização de CVEs, use uma abordagem Risk-Based (KEV > EPSS alto + CVSS alto > exposição do ativo > demais).
+7. Só use o formato estruturado de CVE quando a pergunta for especificamente sobre um CVE.
 
-Formato para CVE específico:
-**CVE:** código
+Formato obrigatório para explicação de CVE específico:
+**CVE:** 
 **Nome / Título:** 
 **Descrição:** 
 **Severidade (CVSS):** 
 **Vetor de Ataque:** 
 **Impacto:** 
-**Como funciona:** 
+**Como funciona / Exploração:** 
 **Sistemas Afetados:** 
 **Mitigação / Remediação:** 
 **Referências:** 
 
-Contexto do documento enviado pelo usuário:
+Histórico recente da conversa:
+{chat_history}
+
+Conteúdo do documento PDF enviado (se houver):
 {doc_context}
 
-Contexto da base de conhecimento:
+Base de conhecimento (trechos relevantes):
 {kb_context}
 
-Informações oficiais do CVE (se houver):
+Dados oficiais do NVD (se houver CVE):
 {cve_info}
 
-Pergunta: {question}
+Pergunta do usuário:
+{question}
 
 Resposta:"""
 
@@ -62,11 +75,11 @@ def buscar_cve_nvd(cve_id: str) -> str:
         url = f"https://services.nvd.nist.gov/rest/json/cves/2.0?cveId={cve_id.upper()}"
         r = requests.get(url, headers={"User-Agent": "VulnAI/1.0"}, timeout=15)
         if r.status_code != 200:
-            return f"Não encontrado no NVD: {cve_id}"
+            return f"CVE {cve_id} não encontrado no NVD."
         data = r.json()
         vulns = data.get("vulnerabilities", [])
         if not vulns:
-            return f"{cve_id} não encontrado no NVD."
+            return f"CVE {cve_id} não encontrado no NVD."
         cve = vulns[0]["cve"]
         desc = next((d["value"] for d in cve.get("descriptions", []) if d.get("lang") == "en"), "Sem descrição")
         metrics = cve.get("metrics", {})
@@ -83,16 +96,15 @@ def buscar_cve_nvd(cve_id: str) -> str:
         refs = "\n".join([f"- {ref.get('url')}" for ref in cve.get("references", [])[:5]]) or "Nenhuma"
         return f"CVE: {cve.get('id')}\nDescrição: {desc}\nCVSS: {cvss}\nVetor: {vector}\nReferências:\n{refs}"
     except Exception as e:
-        return f"Erro ao buscar CVE: {e}"
+        return f"Erro ao consultar NVD: {e}"
 
 
-def extrair_cve(texto: str):
-    m = re.search(r"CVE-\d{4}-\d{4,}", texto, re.IGNORECASE)
-    return m.group(0).upper() if m else None
+def extrair_cves(texto: str) -> list:
+    return list(set(re.findall(r"CVE-\d{4}-\d{4,}", texto, re.IGNORECASE)))
 
 
-def processar_pdf(uploaded_file) -> Chroma | None:
-    """Processa o PDF enviado e cria um vectorstore temporário"""
+def processar_pdf(uploaded_file):
+    """Processa PDF com melhor divisão de chunks"""
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
             tmp.write(uploaded_file.getvalue())
@@ -105,7 +117,12 @@ def processar_pdf(uploaded_file) -> Chroma | None:
         if not docs:
             return None
 
-        splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        # Chunks menores e com mais overlap para melhor recuperação
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=800,
+            chunk_overlap=250,
+            separators=["\n\n", "\n", ". ", " ", ""]
+        )
         chunks = splitter.split_documents(docs)
 
         embeddings = get_embeddings()
@@ -116,38 +133,98 @@ def processar_pdf(uploaded_file) -> Chroma | None:
         return None
 
 
-def perguntar(pergunta: str, doc_vectorstore=None) -> str:
+def resumir_pdf(doc_vectorstore) -> str:
+    """Gera um resumo rápido do PDF enviado"""
     try:
-        # Contexto do documento enviado
-        doc_context = "Nenhum documento enviado."
-        if doc_vectorstore is not None:
-            docs = doc_vectorstore.similarity_search(pergunta, k=4)
-            doc_context = "\n\n".join([d.page_content for d in docs]) if docs else "Nenhum trecho relevante encontrado no documento."
+        docs = doc_vectorstore.similarity_search("resumo vulnerabilidades CVE criticidade recomendações", k=6)
+        conteudo = "\n\n".join([d.page_content for d in docs])
+        llm = ChatOllama(model="llama3.2", base_url=OLLAMA_URL, temperature=0.1)
+        prompt = f"""Faça um resumo técnico e objetivo do seguinte conteúdo de um relatório/documento de vulnerabilidades.
+Destaque:
+- Principais vulnerabilidades ou CVEs encontradas
+- Níveis de severidade
+- Sistemas/ativos afetados
+- Recomendações de mitigação
 
-        # Contexto da base de conhecimento
+Conteúdo:
+{conteudo[:4000]}
+
+Resumo:"""
+        return llm.invoke(prompt).content
+    except Exception as e:
+        return f"Não foi possível gerar resumo: {e}"
+
+
+def priorizar_cves(lista_cves: list) -> str:
+    """Modo especial de priorização Risk-Based"""
+    resultados = []
+    for cve in lista_cves[:15]:  # limita para não demorar muito
+        info = buscar_cve_nvd(cve)
+        resultados.append(f"### {cve}\n{info}\n")
+
+    llm = ChatOllama(model="llama3.2", base_url=OLLAMA_URL, temperature=0.1)
+    prompt = f"""Você é um especialista em Risk-Based Vulnerability Management.
+Com base nas informações abaixo, faça uma priorização profissional das CVEs.
+
+Use esta ordem de prioridade:
+1. Presente no CISA KEV (exploração confirmada)
+2. CVSS alto + alta probabilidade de exploração
+3. RCE / execução remota de código
+4. Demais
+
+Para cada CVE dê:
+- Prioridade (Crítica / Alta / Média / Baixa)
+- Justificativa curta
+- Ação recomendada
+
+Dados das CVEs:
+{"".join(resultados)}
+
+Priorização:"""
+    return llm.invoke(prompt).content
+
+
+def perguntar(pergunta: str, doc_vectorstore=None, chat_history: str = "") -> str:
+    try:
+        # Detecta se é pedido de priorização
+        if re.search(r"prioriz|prioridade|ordenar.*cve|ranking.*cve", pergunta, re.IGNORECASE):
+            cves = extrair_cves(pergunta)
+            if cves:
+                return priorizar_cves(cves)
+
+        # Contexto do PDF
+        doc_context = "Nenhum documento PDF enviado."
+        if doc_vectorstore is not None:
+            docs = doc_vectorstore.similarity_search(pergunta, k=5)
+            doc_context = "\n\n".join([d.page_content for d in docs]) if docs else "Nenhum trecho relevante no PDF."
+
+        # Contexto da base de conhecimento (RAG ajustado)
         kb_context = "Base de conhecimento não disponível."
         if os.path.exists(CHROMA_PATH):
             embeddings = get_embeddings()
             kb_store = Chroma(persist_directory=CHROMA_PATH, embedding_function=embeddings)
-            kb_docs = kb_store.similarity_search(pergunta, k=4)
-            kb_context = "\n\n".join([d.page_content for d in kb_docs]) if kb_docs else "Nenhum trecho relevante na base."
+            kb_docs = kb_store.similarity_search(pergunta, k=6)
+            kb_context = "\n\n".join([d.page_content for d in kb_docs]) if kb_docs else "Nenhum trecho relevante."
 
-        # CVE em tempo real
-        cve_id = extrair_cve(pergunta)
-        cve_info = buscar_cve_nvd(cve_id) if cve_id else "Nenhum CVE específico mencionado."
+        # CVE individual
+        cves = extrair_cves(pergunta)
+        cve_info = ""
+        if cves:
+            cve_info = buscar_cve_nvd(cves[0])
+        else:
+            cve_info = "Nenhum CVE específico mencionado."
 
-        llm = ChatOllama(model="llama3.2", base_url=OLLAMA_URL, temperature=0.2)
+        llm = ChatOllama(model="llama3.2", base_url=OLLAMA_URL, temperature=0.15)
         prompt = ChatPromptTemplate.from_template(SYSTEM_PROMPT)
-
         chain = prompt | llm | StrOutputParser()
 
-        resposta = chain.invoke({
+        return chain.invoke({
+            "chat_history": chat_history or "Nenhum histórico.",
             "doc_context": doc_context,
             "kb_context": kb_context,
             "cve_info": cve_info,
             "question": pergunta
         })
-        return resposta
 
     except Exception as e:
         return f"Erro ao processar a pergunta:\n{str(e)}\n\nVerifique se o Ollama está rodando."
